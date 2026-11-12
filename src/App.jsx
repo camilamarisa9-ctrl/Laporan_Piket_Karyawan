@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 
 // Ganti URL di bawah ini dengan URL Web App Google Apps Script Anda setelah di-deploy
-const APPS_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbxXUP0wkuKp1QEzVa30t68d4ZlCJuJIk64J6ZU_QD6daA3RXeq7rtMg56c013GhZylf/exec";
+const APPS_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbwV1lEvgd6s-jEyPeLuEaAHV9V84b2Jm1h8QYq7UzinjCWF4pTXSALLoCoiW9J5vaEnbw/exec";
 
 const LIST_PETUGAS = [
   "Anggi Dwi Saputra", "Dhiyaul Husni", "Hilham Haqki", 
@@ -20,10 +20,7 @@ export default function App() {
   const [role, setRole] = useState(null); // 'landing', 'petugas', 'admin', 'head'
   const [showLoginModal, setShowLoginModal] = useState(false);
   const [loginRoleTarget, setLoginRoleTarget] = useState('petugas'); // 'petugas', 'admin', 'head'
-  // Fungsi untuk langsung membuka Google Spreadsheet online
-  const handleOpenSpreadsheet = () => {
-    window.open("https://docs.google.com/spreadsheets/d/1tl7KN7JJo7XoMJ1i5a3UcQkCf2pVEnzKzV6s7J6DU8E/edit?usp=sharing", "_blank");
-  };
+  
   const [usernameInput, setUsernameInput] = useState("Anggi Dwi Saputra");
   const [passwordInput, setPasswordInput] = useState("password123");
   const [currentUser, setCurrentUser] = useState("Anggi Dwi Saputra");
@@ -32,26 +29,53 @@ export default function App() {
   const [toast, setToast] = useState({ show: false, message: "" });
   const [loading, setLoading] = useState(false);
 
-  // Simulasi Database Laporan untuk Admin & Head Unit
-  const [laporanList, setLaporanList] = useState([
-    {
-      id: 1,
-      tanggalLaporan: "2026-11-12",
-      namaPetugas: "Anggi Dwi Saputra",
-      trukPkJumlah: 12,
-      trukPkTotalMt: 145.50,
-      trukPkGantung: "Nihil",
-      trukPkAlasan: "Aman lancar",
-      lansirCpkoJumlah: 4,
-      lansirCpkoTotalMt: 80.20,
-      plantRunRunning: "18 Jam",
-      plantRunStop: "6 Jam",
-      plantRunAktivitasHmpke: "Lansir kontinyu",
-      catatanTemuan: "Operasional shift pagi terkendali dengan baik.",
-      ditujukanKepada: "Irwansyah Putra",
-      statusValidasi: "Menunggu Validasi"
+  // Database Laporan untuk Admin & Head Unit (Sinkron dengan Spreadsheet)
+  const [laporanList, setLaporanList] = useState([]);
+
+  // Fungsi menarik data dari Google Spreadsheet
+  const fetchData = async () => {
+    try {
+      const response = await fetch(APPS_SCRIPT_URL);
+      const result = await response.json();
+      console.log("Data dari spreadsheet:", result);
+
+      if (Array.isArray(result) && result.length > 0) {
+        const mappedData = result.map((row, index) => ({
+          id: row["Timestamp"] ? new Date(row["Timestamp"]).getTime() + index : Date.now() + index,
+          tanggalLaporan: row["Tanggal Laporan"] ? String(row["Tanggal Laporan"]).split('T')[0] : "",
+          namaPetugas: row["Nama Petugas"] || "",
+          trukPkJumlah: row["Truk PK Jumlah"] || 0,
+          trukPkTotalMt: row["Truk PK Total (MT)"] || 0,
+          trukPkGantung: row["Truk PK Gantung"] || "",
+          trukPkAlasan: row["Alasan PK"] || "",
+          lansirCpkoJumlah: row["Lansir CPKO Jumlah"] || 0,
+          lansirCpkoTotalMt: row["Lansir CPKO Total (MT)"] || 0,
+          plantRunRunning: row["Plant Running"] || "",
+          plantRunStop: row["Plant Stop"] || "",
+          plantRunAktivitasHmpke: row["Aktivitas HMPKE"] || "",
+          ringkasanKontraktor: row["Ringkasan Kontraktor"] || "",
+          catatanTemuan: row["Catatan Temuan"] || "",
+          ditujukanKepada: row["Ditujukan Kepada"] || "Irwansyah Putra",
+          fotoUrl: row["Link Dokumentasi Foto"] || "",
+          statusValidasi: "Menunggu Validasi"
+        })).reverse(); // Urutkan dari yang terbaru
+
+        setLaporanList(mappedData);
+        localStorage.setItem('uip_laporan_piket_list', JSON.stringify(mappedData));
+      } else {
+        const localSaved = JSON.parse(localStorage.getItem('uip_laporan_piket_list')) || [];
+        setLaporanList(localSaved);
+      }
+    } catch (error) {
+      console.error("Gagal mengambil data dari spreadsheet:", error);
+      const localSaved = JSON.parse(localStorage.getItem('uip_laporan_piket_list')) || [];
+      setLaporanList(localSaved);
     }
-  ]);
+  };
+
+  useEffect(() => {
+    fetchData();
+  }, []);
 
   // Form State Utama
   const [formData, setFormData] = useState({
@@ -89,10 +113,12 @@ export default function App() {
     if (loginRoleTarget === 'admin') {
       setCurrentUser("Admin HRGA");
       setRole('admin');
+      fetchData(); // Refresh data saat masuk Admin
       showToastMsg("Login Berhasil sebagai Admin/HRGA.");
     } else if (loginRoleTarget === 'head') {
       setCurrentUser("Irwansyah Putra (Head Unit)");
       setRole('head');
+      fetchData(); // Refresh data saat masuk Head Unit
       showToastMsg("Login Berhasil sebagai Head Unit.");
     } else {
       if (usernameInput) setCurrentUser(usernameInput);
@@ -139,24 +165,35 @@ export default function App() {
     const newReport = {
       id: Date.now(),
       ...formData,
-      namaPetugas: currentUser,
+      namaPetugas: formData.namaPetugas || currentUser,
       statusValidasi: "Menunggu Validasi"
     };
+
+    // 1. SIMPAN KE LOCALSTATE & LOCALSTORAGE TERLEBIH DAHULU (DIJAMIN MUNCUL)
+    const updatedList = [newReport, ...laporanList];
+    setLaporanList(updatedList);
+    localStorage.setItem('uip_laporan_piket_list', JSON.stringify(updatedList));
 
     const payload = {
       ...newReport,
       laporanKontraktor: Object.entries(kontraktorState).map(([nama, val]) => ({ nama, ...val }))
     };
 
+    // 2. COBA KIRIM KE GOOGLE SHEETS DI LATAR BELAKANG (BACKGROUND)
     try {
       await fetch(APPS_SCRIPT_URL, {
         method: 'POST',
         mode: 'no-cors',
         body: JSON.stringify(payload)
       });
-      
-      setLaporanList(prev => [newReport, ...prev]);
       showToastMsg("Laporan Berhasil Terkirim ke Spreadsheet & Sistem!");
+      // Tarik ulang data terbaru setelah beberapa detik agar sinkron dengan Spreadsheet
+      setTimeout(() => fetchData(), 2000);
+    } catch (err) {
+      console.warn("Gagal sinkron ke Google Spreadsheet, tapi data tersimpan lokal:", err.message);
+      showToastMsg("Laporan tersimpan di sistem lokal (offline mode).");
+    } finally {
+      setLoading(false);
       window.scrollTo({ top: 0, behavior: 'smooth' });
       
       // Reset form
@@ -177,10 +214,6 @@ export default function App() {
         dokumentasiBase64: '',
         dokumentasiFileName: ''
       });
-    } catch (err) {
-      alert("Gagal mengirim laporan: " + err.message);
-    } finally {
-      setLoading(false);
     }
   };
 
@@ -188,6 +221,11 @@ export default function App() {
   const handleValidasiLaporan = (id, statusBaru) => {
     setLaporanList(prev => prev.map(item => item.id === id ? { ...item, statusValidasi: statusBaru } : item));
     showToastMsg(`Status laporan berhasil diubah menjadi: ${statusBaru}`);
+  };
+
+  // Fungsi Buka Google Spreadsheet
+  const handleOpenSpreadsheet = () => {
+    window.open("https://docs.google.com/spreadsheets/", "_blank");
   };
 
   // Fungsi Unduh Rekapitulasi berformat Spreadsheet (.xls)
@@ -256,7 +294,7 @@ export default function App() {
     <div className="bg-slate-50 text-slate-800 antialiased min-h-screen flex flex-col font-sans">
 
       {/* Toast Notification */}
-      <div className={`fixed top-3 left-3 right-3 sm:left-auto sm:right-5 sm:top-5 z-50 transform transition-all duration-300 ease-in-out bg-emerald-600 text-white px-4 sm:px-6 py-3 rounded-xl shadow-2xl flex items-center space-x-3 ${toast.show ? 'translate-x-0' : 'translate-x-full'}`}>
+      <div className={`fixed top-5 right-5 z-50 transform transition-all duration-300 ease-in-out bg-emerald-600 text-white px-6 py-3 rounded-xl shadow-2xl flex items-center space-x-3 ${toast.show ? 'translate-x-0' : 'translate-x-full'}`}>
         <i className="fa-solid fa-circle-check text-xl"></i>
         <div>
           <h4 className="font-bold text-sm">Informasi Sistem</h4>
@@ -268,31 +306,31 @@ export default function App() {
       {role === null && (
         <div className="flex flex-col min-h-screen">
           <header className="bg-slate-900 text-white shadow-md sticky top-0 z-40">
-            <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-3 sm:h-20 flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3">
-              <div className="flex items-center space-x-3 min-w-0">
+            <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-20 flex items-center justify-between">
+              <div className="flex items-center space-x-3">
                 <div className="bg-blue-600 text-white p-2.5 rounded-xl shadow-inner font-bold text-lg flex items-center justify-center">
                   <i className="fa-solid fa-industry"></i>
                 </div>
-                <div className="min-w-0">
-                  <h1 className="font-bold text-base sm:text-lg tracking-wide">PT. USAHA INTI PADANG</h1>
+                <div>
+                  <h1 className="font-bold text-lg tracking-wide">PT. USAHA INTI PADANG</h1>
                   <p className="text-xs text-slate-400">Sistem Informasi Operasional & Piket</p>
                 </div>
               </div>
-              <div className="grid grid-cols-1 sm:flex items-center gap-2 sm:gap-3">
-                <button onClick={() => { setLoginRoleTarget('petugas'); setShowLoginModal(true); }} className="bg-blue-600 hover:bg-blue-500 text-white px-4 py-2 rounded-xl font-semibold text-xs shadow transition whitespace-nowrap">
+              <div className="flex items-center space-x-3">
+                <button onClick={() => { setLoginRoleTarget('petugas'); setShowLoginModal(true); }} className="bg-blue-600 hover:bg-blue-500 text-white px-4 py-2 rounded-xl font-semibold text-xs shadow transition">
                   <i className="fa-solid fa-user-pen mr-1"></i> Login Petugas
                 </button>
-                <button onClick={() => { setLoginRoleTarget('admin'); setShowLoginModal(true); }} className="bg-slate-800 hover:bg-slate-700 text-blue-400 border border-blue-500/30 px-4 py-2 rounded-xl font-semibold text-xs shadow transition whitespace-nowrap">
+                <button onClick={() => { setLoginRoleTarget('admin'); setShowLoginModal(true); }} className="bg-slate-800 hover:bg-slate-700 text-blue-400 border border-blue-500/30 px-4 py-2 rounded-xl font-semibold text-xs shadow transition">
                   <i className="fa-solid fa-user-shield mr-1"></i> Login Admin/HRGA
                 </button>
-                <button onClick={() => { setLoginRoleTarget('head'); setShowLoginModal(true); }} className="bg-amber-600 hover:bg-amber-500 text-slate-900 px-4 py-2 rounded-xl font-bold text-xs shadow transition whitespace-nowrap">
+                <button onClick={() => { setLoginRoleTarget('head'); setShowLoginModal(true); }} className="bg-amber-600 hover:bg-amber-500 text-slate-900 px-4 py-2 rounded-xl font-bold text-xs shadow transition">
                   <i className="fa-solid fa-user-tie mr-1"></i> Login Head Unit
                 </button>
               </div>
             </div>
           </header>
 
-          <section className="relative bg-gradient-to-br from-slate-900 via-blue-950 to-slate-900 text-white py-16 sm:py-24 px-4 sm:px-6 lg:px-8 overflow-hidden flex-grow flex items-center">
+          <section className="relative bg-gradient-to-br from-slate-900 via-blue-950 to-slate-900 text-white py-24 px-4 sm:px-6 lg:px-8 overflow-hidden flex-grow flex items-center">
             <div className="max-w-4xl mx-auto text-center relative z-10">
               <span className="inline-block bg-blue-500/20 text-blue-300 border border-blue-500/30 px-4 py-1.5 rounded-full text-xs font-semibold uppercase tracking-wider mb-6">
                 Portal Terintegrasi PT. Usaha Inti Padang
@@ -316,7 +354,7 @@ export default function App() {
       {/* ================= LOGIN MODAL ================= */}
       {showLoginModal && (
         <div className="fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-sm flex items-center justify-center p-4">
-          <div className="bg-white rounded-2xl shadow-2xl w-full max-w-md max-h-[90vh] overflow-y-auto">
+          <div className="bg-white rounded-2xl shadow-2xl w-full max-w-md overflow-hidden">
             <div className="bg-slate-900 text-white p-6 relative">
               <button onClick={() => setShowLoginModal(false)} className="absolute top-4 right-4 text-slate-400 hover:text-white">
                 <i className="fa-solid fa-xmark text-xl"></i>
@@ -359,25 +397,25 @@ export default function App() {
       {role === 'petugas' && (
         <div className="flex flex-col min-h-screen">
           <header className="bg-slate-900 text-white shadow-md sticky top-0 z-40">
-            <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 min-h-16 py-2 flex items-center justify-between gap-3">
-              <div className="flex items-center space-x-3 min-w-0">
+            <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
+              <div className="flex items-center space-x-3">
                 <div className="bg-blue-600 text-white p-2 rounded-lg font-bold"><i className="fa-solid fa-industry"></i></div>
-                <div className="min-w-0"><h1 className="font-bold text-xs sm:text-base">PT. USAHA INTI PADANG</h1><span className="text-xs text-blue-400">Form Laporan Piket Karyawan</span></div>
+                <div><h1 className="font-bold text-sm sm:text-base">PT. USAHA INTI PADANG</h1><span className="text-xs text-blue-400">Form Laporan Piket Karyawan</span></div>
               </div>
-              <button onClick={handleLogout} className="bg-red-600/20 hover:bg-red-600 text-red-400 hover:text-white px-3 py-1.5 rounded-lg text-xs font-semibold transition whitespace-nowrap shrink-0">
+              <button onClick={handleLogout} className="bg-red-600/20 hover:bg-red-600 text-red-400 hover:text-white px-3.5 py-1.5 rounded-lg text-xs font-semibold transition">
                 <i className="fa-solid fa-right-from-bracket mr-1"></i> Logout
               </button>
             </div>
           </header>
 
-          <main className="flex-grow py-6 sm:py-10 px-3 sm:px-6 lg:px-8 max-w-4xl mx-auto w-full">
+          <main className="flex-grow py-10 px-4 sm:px-6 lg:px-8 max-w-4xl mx-auto w-full">
             <div className="bg-white shadow-xl rounded-2xl overflow-hidden border border-slate-200">
-              <div className="bg-slate-900 text-white p-5 sm:p-8 text-center">
-                <h2 className="text-lg sm:text-xl font-extrabold uppercase tracking-wide">FORMULIR PIKET HARIAN</h2>
+              <div className="bg-slate-900 text-white p-8 text-center">
+                <h2 className="text-xl font-extrabold uppercase tracking-wide">FORMULIR PIKET HARIAN</h2>
                 <p className="text-blue-400 text-sm">Ditujukan Kepada: <strong>Irwansyah Putra (Head Unit)</strong></p>
               </div>
 
-              <form onSubmit={handleSubmitReport} className="p-4 sm:p-10 space-y-8">
+              <form onSubmit={handleSubmitReport} className="p-6 sm:p-10 space-y-8">
                 {/* Informasi Umum */}
                 <div className="space-y-4">
                   <h3 className="font-bold text-slate-900 text-base uppercase border-b pb-2 flex items-center"><span className="w-2 h-2 bg-blue-600 rounded-full mr-2"></span> Informasi Umum</h3>
@@ -424,7 +462,7 @@ export default function App() {
                     <span className="w-2 h-2 bg-blue-600 rounded-full mr-2"></span> Kinerja Kontraktor & K3
                   </h3>
                   <div className="overflow-x-auto border border-slate-200 rounded-xl">
-                    <table className="w-full min-w-[620px] text-left text-xs">
+                    <table className="w-full text-left text-xs">
                       <thead>
                         <tr className="bg-slate-100 font-bold uppercase border-b text-slate-700">
                           <th className="p-3">Kontraktor</th>
@@ -482,14 +520,17 @@ export default function App() {
       {role === 'admin' && (
         <div className="flex flex-col min-h-screen">
           <header className="bg-slate-900 text-white shadow-md sticky top-0 z-40">
-            <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 min-h-16 py-2 flex items-center justify-between gap-3">
-              <div className="flex items-center space-x-3 min-w-0">
+            <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
+              <div className="flex items-center space-x-3">
                 <div className="bg-blue-600 text-white p-2 rounded-lg font-bold"><i className="fa-solid fa-user-shield"></i></div>
-                <div className="min-w-0"><h1 className="font-bold text-xs sm:text-sm">PT. USAHA INTI PADANG</h1><span className="text-xs text-blue-400">Dashboard Admin & HRGA</span></div>
+                <div><h1 className="font-bold text-sm">PT. USAHA INTI PADANG</h1><span className="text-xs text-blue-400">Dashboard Admin & HRGA</span></div>
               </div>
-              <div className="flex flex-col sm:flex-row items-end sm:items-center gap-2 shrink-0">
-                <button onClick={handleOpenSpreadsheet} className="bg-emerald-600 hover:bg-emerald-500 text-white px-2 sm:px-3 py-1.5 rounded-lg text-[10px] sm:text-xs font-bold flex items-center shadow whitespace-nowrap">
-                    <i className="fa-solid fa-file-excel mr-1.5"></i> Buka Google Spreadsheet
+              <div className="flex items-center space-x-3">
+                <button onClick={fetchData} className="bg-blue-600 hover:bg-blue-500 text-white px-3 py-1.5 rounded-lg text-xs font-bold flex items-center shadow">
+                  <i className="fa-solid fa-rotate mr-1.5"></i> Muat Ulang Data
+                </button>
+                <button onClick={handleOpenSpreadsheet} className="bg-emerald-600 hover:bg-emerald-500 text-white px-3 py-1.5 rounded-lg text-xs font-bold flex items-center shadow">
+                  <i className="fa-solid fa-file-excel mr-1.5"></i> Buka Google Spreadsheet
                 </button>
                 <button onClick={handleLogout} className="bg-red-600/20 hover:bg-red-600 text-red-400 hover:text-white px-3 py-1.5 rounded-lg text-xs font-semibold">Logout</button>
               </div>
@@ -502,14 +543,19 @@ export default function App() {
                 <h2 className="text-xl font-bold text-slate-900">Pemantauan & Validasi Laporan Piket</h2>
                 <p className="text-xs text-slate-500">Kelola validasi laporan operasional harian yang masuk dari petugas piket.</p>
               </div>
-              <div className="bg-blue-50 text-blue-800 px-4 py-2 rounded-xl text-xs font-bold">
-                Total Laporan Masuk: {laporanList.length}
+              <div className="flex items-center gap-3">
+                <button onClick={handleDownloadRekap} className="bg-slate-800 hover:bg-slate-700 text-white px-4 py-2 rounded-xl text-xs font-bold">
+                  Unduh Rekap (.xls)
+                </button>
+                <div className="bg-blue-50 text-blue-800 px-4 py-2 rounded-xl text-xs font-bold">
+                  Total Laporan Masuk: {laporanList.length}
+                </div>
               </div>
             </div>
 
             <div className="bg-white rounded-2xl shadow border border-slate-200 overflow-hidden">
               <div className="overflow-x-auto">
-                <table className="w-full min-w-[900px] text-left text-xs">
+                <table className="w-full text-left text-xs">
                   <thead className="bg-slate-100 uppercase text-slate-700 border-b">
                     <tr>
                       <th className="p-4">Tanggal</th>
@@ -523,25 +569,41 @@ export default function App() {
                     </tr>
                   </thead>
                   <tbody className="divide-y">
-                    {laporanList.map((item) => (
-                      <tr key={item.id} className="hover:bg-slate-50">
-                        <td className="p-4 font-medium">{item.tanggalLaporan}</td>
-                        <td className="p-4 font-bold text-slate-900">{item.namaPetugas}</td>
-                        <td className="p-4">{item.trukPkJumlah} Truk ({item.trukPkTotalMt} MT)</td>
-                        <td className="p-4">{item.lansirCpkoJumlah} Truk ({item.lansirCpkoTotalMt} MT)</td>
-                        <td className="p-4">Running: {item.plantRunRunning}</td>
-                        <td className="p-4 text-blue-600 font-semibold">{item.ditujukanKepada}</td>
-                        <td className="p-4">
-                          <span className={`px-2.5 py-1 rounded-full text-[10px] font-bold ${item.statusValidasi === 'Valid' ? 'bg-emerald-100 text-emerald-800' : 'bg-amber-100 text-amber-800'}`}>
-                            {item.statusValidasi}
-                          </span>
-                        </td>
-                        <td className="p-4 text-center space-x-2">
-                          <button onClick={() => handleValidasiLaporan(item.id, 'Valid')} className="bg-emerald-600 text-white px-2.5 py-1 rounded-lg text-[10px] font-bold hover:bg-emerald-500">Validasi</button>
-                          <button onClick={() => handleValidasiLaporan(item.id, 'Perlu Revisi')} className="bg-red-600 text-white px-2.5 py-1 rounded-lg text-[10px] font-bold hover:bg-red-500">Revisi</button>
+                    {laporanList.length === 0 ? (
+                      <tr>
+                        <td colSpan="8" className="p-8 text-center text-slate-500">
+                          Belum ada data laporan yang masuk dari Spreadsheet.
                         </td>
                       </tr>
-                    ))}
+                    ) : (
+                      laporanList.map((item) => (
+                        <tr key={item.id} className="hover:bg-slate-50">
+                          <td className="p-4 font-medium">{item.tanggalLaporan}</td>
+                          <td className="p-4 font-bold text-slate-900">{item.namaPetugas}</td>
+                          <td className="p-4">{item.trukPkJumlah} Truk ({item.trukPkTotalMt} MT)</td>
+                          <td className="p-4">{item.lansirCpkoJumlah} Truk ({item.lansirCpkoTotalMt} MT)</td>
+                          <td className="p-4">Run: {item.plantRunRunning} / Stop: {item.plantRunStop}</td>
+                          <td className="p-4">{item.ditujukanKepada}</td>
+                          <td className="p-4">
+                            <span className={`px-2.5 py-1 rounded-full font-bold text-[11px] ${
+                              item.statusValidasi === 'Disetujui' ? 'bg-emerald-100 text-emerald-700' :
+                              item.statusValidasi === 'Ditolak' ? 'bg-red-100 text-red-700' :
+                              'bg-amber-100 text-amber-700'
+                            }`}>
+                              {item.statusValidasi}
+                            </span>
+                          </td>
+                          <td className="p-4 text-center space-x-2">
+                            <button onClick={() => handleValidasiLaporan(item.id, 'Disetujui')} className="bg-emerald-600 hover:bg-emerald-500 text-white px-2.5 py-1 rounded text-[11px] font-bold">
+                              Setujui
+                            </button>
+                            <button onClick={() => handleValidasiLaporan(item.id, 'Ditolak')} className="bg-red-600 hover:bg-red-500 text-white px-2.5 py-1 rounded text-[11px] font-bold">
+                              Tolak
+                            </button>
+                          </td>
+                        </tr>
+                      ))
+                    )}
                   </tbody>
                 </table>
               </div>
@@ -554,54 +616,75 @@ export default function App() {
       {role === 'head' && (
         <div className="flex flex-col min-h-screen">
           <header className="bg-slate-900 text-white shadow-md sticky top-0 z-40">
-            <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 min-h-16 py-2 flex items-center justify-between gap-3">
-              <div className="flex items-center space-x-3 min-w-0">
+            <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
+              <div className="flex items-center space-x-3">
                 <div className="bg-amber-500 text-slate-900 p-2 rounded-lg font-bold"><i className="fa-solid fa-user-tie"></i></div>
-                <div className="min-w-0"><h1 className="font-bold text-xs sm:text-sm">PT. USAHA INTI PADANG</h1><span className="text-xs text-amber-400">Dashboard Head Unit (Irwansyah Putra)</span></div>
+                <div><h1 className="font-bold text-sm">PT. USAHA INTI PADANG</h1><span className="text-xs text-amber-400">Dashboard Head Unit (Irwansyah Putra)</span></div>
               </div>
-              <button onClick={handleLogout} className="bg-red-600/20 hover:bg-red-600 text-red-400 hover:text-white px-3 py-1.5 rounded-lg text-xs font-semibold shrink-0">Logout</button>
+              <div className="flex items-center space-x-3">
+                <button onClick={fetchData} className="bg-blue-600 hover:bg-blue-500 text-white px-3 py-1.5 rounded-lg text-xs font-bold flex items-center shadow">
+                  <i className="fa-solid fa-rotate mr-1.5"></i> Muat Ulang Data
+                </button>
+                <button onClick={handleLogout} className="bg-red-600/20 hover:bg-red-600 text-red-400 hover:text-white px-3 py-1.5 rounded-lg text-xs font-semibold">Logout</button>
+              </div>
             </div>
           </header>
 
           <main className="flex-grow py-10 px-4 sm:px-6 lg:px-8 max-w-7xl mx-auto w-full space-y-6">
-            <div className="bg-gradient-to-r from-amber-500 to-orange-600 text-slate-900 p-6 rounded-2xl shadow-lg">
-              <h2 className="text-xl sm:text-2xl font-black">Selamat Datang, Irwansyah Putra</h2>
-              <p className="text-xs font-medium mt-1 text-slate-900/80">Semua laporan operasional dan piket harian dari petugas diarahkan ke halaman peninjauan Anda.</p>
+            <div className="bg-white p-6 rounded-2xl shadow border border-slate-200 flex flex-col sm:flex-row justify-between items-center gap-4">
+              <div>
+                <h2 className="text-xl font-bold text-slate-900">Ringkasan Laporan Piket Harian</h2>
+                <p className="text-xs text-slate-500">Laporan operasional yang ditujukan kepada Head Unit.</p>
+              </div>
+              <div className="bg-amber-50 text-amber-800 px-4 py-2 rounded-xl text-xs font-bold">
+                Total Laporan: {laporanList.length}
+              </div>
             </div>
 
-            <div className="space-y-4">
-              <h3 className="font-bold text-slate-800 text-base">Daftar Laporan Masuk untuk Ditinjau</h3>
-              <div className="grid md:grid-cols-2 gap-6">
-                {laporanList.map((item) => (
-                  <div key={item.id} className="bg-white rounded-2xl shadow p-6 border border-slate-200 space-y-4">
-                    <div className="flex justify-between items-center border-b pb-3">
-                      <div>
-                        <span className="text-xs font-bold text-blue-600">{item.tanggalLaporan}</span>
-                        <h4 className="font-bold text-slate-900 text-sm">Petugas: {item.namaPetugas}</h4>
-                      </div>
-                      <span className={`px-2.5 py-1 rounded-full text-[10px] font-bold ${item.statusValidasi === 'Valid' ? 'bg-emerald-100 text-emerald-800' : 'bg-amber-100 text-amber-800'}`}>
-                        {item.statusValidasi}
-                      </span>
-                    </div>
-
-                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 text-xs text-slate-600">
-                      <div><strong>Truk PK:</strong> {item.trukPkJumlah} Unit ({item.trukPkTotalMt} MT)</div>
-                      <div><strong>Lansir CPKO:</strong> {item.lansirCpkoJumlah} Unit ({item.lansirCpkoTotalMt} MT)</div>
-                      <div><strong>Mesin Running:</strong> {item.plantRunRunning}</div>
-                      <div><strong>Mesin Stop:</strong> {item.plantRunStop}</div>
-                    </div>
-
-                    <div className="bg-slate-50 p-3 rounded-xl text-xs space-y-1">
-                      <p className="font-semibold text-slate-700">Catatan Temuan:</p>
-                      <p className="text-slate-600 italic">"{item.catatanTemuan || 'Tidak ada catatan khusus.'}"</p>
-                    </div>
-
-                    <div className="pt-2 flex justify-between items-center text-xs">
-                      <span className="text-slate-400">Ditujukan ke: Head Unit</span>
-                      <span className="font-bold text-emerald-600"><i className="fa-solid fa-circle-check mr-1"></i> Terkirim & Tercatat</span>
-                    </div>
-                  </div>
-                ))}
+            <div className="bg-white rounded-2xl shadow border border-slate-200 overflow-hidden">
+              <div className="overflow-x-auto">
+                <table className="w-full text-left text-xs">
+                  <thead className="bg-slate-100 uppercase text-slate-700 border-b">
+                    <tr>
+                      <th className="p-4">Tanggal</th>
+                      <th className="p-4">Petugas</th>
+                      <th className="p-4">Truk PK (MT)</th>
+                      <th className="p-4">Lansir CPKO (MT)</th>
+                      <th className="p-4">Plant Run</th>
+                      <th className="p-4">Catatan Temuan</th>
+                      <th className="p-4">Status</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y">
+                    {laporanList.length === 0 ? (
+                      <tr>
+                        <td colSpan="7" className="p-8 text-center text-slate-500">
+                          Belum ada data laporan yang masuk dari Spreadsheet.
+                        </td>
+                      </tr>
+                    ) : (
+                      laporanList.map((item) => (
+                        <tr key={item.id} className="hover:bg-slate-50">
+                          <td className="p-4 font-medium">{item.tanggalLaporan}</td>
+                          <td className="p-4 font-bold text-slate-900">{item.namaPetugas}</td>
+                          <td className="p-4">{item.trukPkJumlah} Truk ({item.trukPkTotalMt} MT)</td>
+                          <td className="p-4">{item.lansirCpkoJumlah} Truk ({item.lansirCpkoTotalMt} MT)</td>
+                          <td className="p-4">Run: {item.plantRunRunning} / Stop: {item.plantRunStop}</td>
+                          <td className="p-4">{item.catatanTemuan || "-"}</td>
+                          <td className="p-4">
+                            <span className={`px-2.5 py-1 rounded-full font-bold text-[11px] ${
+                              item.statusValidasi === 'Disetujui' ? 'bg-emerald-100 text-emerald-700' :
+                              item.statusValidasi === 'Ditolak' ? 'bg-red-100 text-red-700' :
+                              'bg-amber-100 text-amber-700'
+                            }`}>
+                              {item.statusValidasi}
+                            </span>
+                          </td>
+                        </tr>
+                      ))
+                    )}
+                  </tbody>
+                </table>
               </div>
             </div>
           </main>
