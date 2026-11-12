@@ -256,7 +256,7 @@ export default function App() {
     <div className="bg-slate-50 text-slate-800 antialiased min-h-screen flex flex-col font-sans">
 
       {/* Toast Notification */}
-      <div className={`fixed top-5 right-5 z-50 transform transition-all duration-300 ease-in-out bg-emerald-600 text-white px-6 py-3 rounded-xl shadow-2xl flex items-center space-x-3 ${toast.show ? 'translate-x-0' : 'translate-x-full'}`}>
+      <div className={`fixed top-3 left-3 right-3 sm:left-auto sm:right-5 sm:top-5 z-50 transform transition-all duration-300 ease-in-out bg-emerald-600 text-white px-4 sm:px-6 py-3 rounded-xl shadow-2xl flex items-center space-x-3 ${toast.show ? 'translate-x-0' : 'translate-x-full'}`}>
         <i className="fa-solid fa-circle-check text-xl"></i>
         <div>
           <h4 className="font-bold text-sm">Informasi Sistem</h4>
@@ -268,31 +268,31 @@ export default function App() {
       {role === null && (
         <div className="flex flex-col min-h-screen">
           <header className="bg-slate-900 text-white shadow-md sticky top-0 z-40">
-            <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-20 flex items-center justify-between">
-              <div className="flex items-center space-x-3">
+            <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-3 sm:h-20 flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3">
+              <div className="flex items-center space-x-3 min-w-0">
                 <div className="bg-blue-600 text-white p-2.5 rounded-xl shadow-inner font-bold text-lg flex items-center justify-center">
                   <i className="fa-solid fa-industry"></i>
                 </div>
-                <div>
-                  <h1 className="font-bold text-lg tracking-wide">PT. USAHA INTI PADANG</h1>
+                <div className="min-w-0">
+                  <h1 className="font-bold text-base sm:text-lg tracking-wide">PT. USAHA INTI PADANG</h1>
                   <p className="text-xs text-slate-400">Sistem Informasi Operasional & Piket</p>
                 </div>
               </div>
-              <div className="flex items-center space-x-3">
-                <button onClick={() => { setLoginRoleTarget('petugas'); setShowLoginModal(true); }} className="bg-blue-600 hover:bg-blue-500 text-white px-4 py-2 rounded-xl font-semibold text-xs shadow transition">
+              <div className="grid grid-cols-1 sm:flex items-center gap-2 sm:gap-3">
+                <button onClick={() => { setLoginRoleTarget('petugas'); setShowLoginModal(true); }} className="bg-blue-600 hover:bg-blue-500 text-white px-4 py-2 rounded-xl font-semibold text-xs shadow transition whitespace-nowrap">
                   <i className="fa-solid fa-user-pen mr-1"></i> Login Petugas
                 </button>
-                <button onClick={() => { setLoginRoleTarget('admin'); setShowLoginModal(true); }} className="bg-slate-800 hover:bg-slate-700 text-blue-400 border border-blue-500/30 px-4 py-2 rounded-xl font-semibold text-xs shadow transition">
+                <button onClick={() => { setLoginRoleTarget('admin'); setShowLoginModal(true); }} className="bg-slate-800 hover:bg-slate-700 text-blue-400 border border-blue-500/30 px-4 py-2 rounded-xl font-semibold text-xs shadow transition whitespace-nowrap">
                   <i className="fa-solid fa-user-shield mr-1"></i> Login Admin/HRGA
                 </button>
-                <button onClick={() => { setLoginRoleTarget('head'); setShowLoginModal(true); }} className="bg-amber-600 hover:bg-amber-500 text-slate-900 px-4 py-2 rounded-xl font-bold text-xs shadow transition">
+                <button onClick={() => { setLoginRoleTarget('head'); setShowLoginModal(true); }} className="bg-amber-600 hover:bg-amber-500 text-slate-900 px-4 py-2 rounded-xl font-bold text-xs shadow transition whitespace-nowrap">
                   <i className="fa-solid fa-user-tie mr-1"></i> Login Head Unit
                 </button>
               </div>
             </div>
           </header>
 
-          <section className="relative bg-gradient-to-br from-slate-900 via-blue-950 to-slate-900 text-white py-24 px-4 sm:px-6 lg:px-8 overflow-hidden flex-grow flex items-center">
+          <section className="relative bg-gradient-to-br from-slate-900 via-blue-950 to-slate-900 text-white py-16 sm:py-24 px-4 sm:px-6 lg:px-8 overflow-hidden flex-grow flex items-center">
             <div className="max-w-4xl mx-auto text-center relative z-10">
               <span className="inline-block bg-blue-500/20 text-blue-300 border border-blue-500/30 px-4 py-1.5 rounded-full text-xs font-semibold uppercase tracking-wider mb-6">
                 Portal Terintegrasi PT. Usaha Inti Padang
@@ -316,7 +316,7 @@ export default function App() {
       {/* ================= LOGIN MODAL ================= */}
       {showLoginModal && (
         <div className="fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-sm flex items-center justify-center p-4">
-          <div className="bg-white rounded-2xl shadow-2xl w-full max-w-md overflow-hidden">
+          <div className="bg-white rounded-2xl shadow-2xl w-full max-w-md max-h-[90vh] overflow-y-auto">
             <div className="bg-slate-900 text-white p-6 relative">
               <button onClick={() => setShowLoginModal(false)} className="absolute top-4 right-4 text-slate-400 hover:text-white">
                 <i className="fa-solid fa-xmark text-xl"></i>
@@ -359,25 +359,25 @@ export default function App() {
       {role === 'petugas' && (
         <div className="flex flex-col min-h-screen">
           <header className="bg-slate-900 text-white shadow-md sticky top-0 z-40">
-            <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
-              <div className="flex items-center space-x-3">
+            <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 min-h-16 py-2 flex items-center justify-between gap-3">
+              <div className="flex items-center space-x-3 min-w-0">
                 <div className="bg-blue-600 text-white p-2 rounded-lg font-bold"><i className="fa-solid fa-industry"></i></div>
-                <div><h1 className="font-bold text-sm sm:text-base">PT. USAHA INTI PADANG</h1><span className="text-xs text-blue-400">Form Laporan Piket Karyawan</span></div>
+                <div className="min-w-0"><h1 className="font-bold text-xs sm:text-base">PT. USAHA INTI PADANG</h1><span className="text-xs text-blue-400">Form Laporan Piket Karyawan</span></div>
               </div>
-              <button onClick={handleLogout} className="bg-red-600/20 hover:bg-red-600 text-red-400 hover:text-white px-3.5 py-1.5 rounded-lg text-xs font-semibold transition">
+              <button onClick={handleLogout} className="bg-red-600/20 hover:bg-red-600 text-red-400 hover:text-white px-3 py-1.5 rounded-lg text-xs font-semibold transition whitespace-nowrap shrink-0">
                 <i className="fa-solid fa-right-from-bracket mr-1"></i> Logout
               </button>
             </div>
           </header>
 
-          <main className="flex-grow py-10 px-4 sm:px-6 lg:px-8 max-w-4xl mx-auto w-full">
+          <main className="flex-grow py-6 sm:py-10 px-3 sm:px-6 lg:px-8 max-w-4xl mx-auto w-full">
             <div className="bg-white shadow-xl rounded-2xl overflow-hidden border border-slate-200">
-              <div className="bg-slate-900 text-white p-8 text-center">
-                <h2 className="text-xl font-extrabold uppercase tracking-wide">FORMULIR PIKET HARIAN</h2>
+              <div className="bg-slate-900 text-white p-5 sm:p-8 text-center">
+                <h2 className="text-lg sm:text-xl font-extrabold uppercase tracking-wide">FORMULIR PIKET HARIAN</h2>
                 <p className="text-blue-400 text-sm">Ditujukan Kepada: <strong>Irwansyah Putra (Head Unit)</strong></p>
               </div>
 
-              <form onSubmit={handleSubmitReport} className="p-6 sm:p-10 space-y-8">
+              <form onSubmit={handleSubmitReport} className="p-4 sm:p-10 space-y-8">
                 {/* Informasi Umum */}
                 <div className="space-y-4">
                   <h3 className="font-bold text-slate-900 text-base uppercase border-b pb-2 flex items-center"><span className="w-2 h-2 bg-blue-600 rounded-full mr-2"></span> Informasi Umum</h3>
@@ -424,7 +424,7 @@ export default function App() {
                     <span className="w-2 h-2 bg-blue-600 rounded-full mr-2"></span> Kinerja Kontraktor & K3
                   </h3>
                   <div className="overflow-x-auto border border-slate-200 rounded-xl">
-                    <table className="w-full text-left text-xs">
+                    <table className="w-full min-w-[620px] text-left text-xs">
                       <thead>
                         <tr className="bg-slate-100 font-bold uppercase border-b text-slate-700">
                           <th className="p-3">Kontraktor</th>
@@ -482,13 +482,13 @@ export default function App() {
       {role === 'admin' && (
         <div className="flex flex-col min-h-screen">
           <header className="bg-slate-900 text-white shadow-md sticky top-0 z-40">
-            <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
-              <div className="flex items-center space-x-3">
+            <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 min-h-16 py-2 flex items-center justify-between gap-3">
+              <div className="flex items-center space-x-3 min-w-0">
                 <div className="bg-blue-600 text-white p-2 rounded-lg font-bold"><i className="fa-solid fa-user-shield"></i></div>
-                <div><h1 className="font-bold text-sm">PT. USAHA INTI PADANG</h1><span className="text-xs text-blue-400">Dashboard Admin & HRGA</span></div>
+                <div className="min-w-0"><h1 className="font-bold text-xs sm:text-sm">PT. USAHA INTI PADANG</h1><span className="text-xs text-blue-400">Dashboard Admin & HRGA</span></div>
               </div>
-              <div className="flex items-center space-x-3">
-                <button onClick={handleOpenSpreadsheet} className="bg-emerald-600 hover:bg-emerald-500 text-white px-3 py-1.5 rounded-lg text-xs font-bold flex items-center shadow">
+              <div className="flex flex-col sm:flex-row items-end sm:items-center gap-2 shrink-0">
+                <button onClick={handleOpenSpreadsheet} className="bg-emerald-600 hover:bg-emerald-500 text-white px-2 sm:px-3 py-1.5 rounded-lg text-[10px] sm:text-xs font-bold flex items-center shadow whitespace-nowrap">
                     <i className="fa-solid fa-file-excel mr-1.5"></i> Buka Google Spreadsheet
                 </button>
                 <button onClick={handleLogout} className="bg-red-600/20 hover:bg-red-600 text-red-400 hover:text-white px-3 py-1.5 rounded-lg text-xs font-semibold">Logout</button>
@@ -509,7 +509,7 @@ export default function App() {
 
             <div className="bg-white rounded-2xl shadow border border-slate-200 overflow-hidden">
               <div className="overflow-x-auto">
-                <table className="w-full text-left text-xs">
+                <table className="w-full min-w-[900px] text-left text-xs">
                   <thead className="bg-slate-100 uppercase text-slate-700 border-b">
                     <tr>
                       <th className="p-4">Tanggal</th>
@@ -554,18 +554,18 @@ export default function App() {
       {role === 'head' && (
         <div className="flex flex-col min-h-screen">
           <header className="bg-slate-900 text-white shadow-md sticky top-0 z-40">
-            <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
-              <div className="flex items-center space-x-3">
+            <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 min-h-16 py-2 flex items-center justify-between gap-3">
+              <div className="flex items-center space-x-3 min-w-0">
                 <div className="bg-amber-500 text-slate-900 p-2 rounded-lg font-bold"><i className="fa-solid fa-user-tie"></i></div>
-                <div><h1 className="font-bold text-sm">PT. USAHA INTI PADANG</h1><span className="text-xs text-amber-400">Dashboard Head Unit (Irwansyah Putra)</span></div>
+                <div className="min-w-0"><h1 className="font-bold text-xs sm:text-sm">PT. USAHA INTI PADANG</h1><span className="text-xs text-amber-400">Dashboard Head Unit (Irwansyah Putra)</span></div>
               </div>
-              <button onClick={handleLogout} className="bg-red-600/20 hover:bg-red-600 text-red-400 hover:text-white px-3 py-1.5 rounded-lg text-xs font-semibold">Logout</button>
+              <button onClick={handleLogout} className="bg-red-600/20 hover:bg-red-600 text-red-400 hover:text-white px-3 py-1.5 rounded-lg text-xs font-semibold shrink-0">Logout</button>
             </div>
           </header>
 
           <main className="flex-grow py-10 px-4 sm:px-6 lg:px-8 max-w-7xl mx-auto w-full space-y-6">
             <div className="bg-gradient-to-r from-amber-500 to-orange-600 text-slate-900 p-6 rounded-2xl shadow-lg">
-              <h2 className="text-2xl font-black">Selamat Datang, Irwansyah Putra</h2>
+              <h2 className="text-xl sm:text-2xl font-black">Selamat Datang, Irwansyah Putra</h2>
               <p className="text-xs font-medium mt-1 text-slate-900/80">Semua laporan operasional dan piket harian dari petugas diarahkan ke halaman peninjauan Anda.</p>
             </div>
 
@@ -584,7 +584,7 @@ export default function App() {
                       </span>
                     </div>
 
-                    <div className="grid grid-cols-2 gap-2 text-xs text-slate-600">
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 text-xs text-slate-600">
                       <div><strong>Truk PK:</strong> {item.trukPkJumlah} Unit ({item.trukPkTotalMt} MT)</div>
                       <div><strong>Lansir CPKO:</strong> {item.lansirCpkoJumlah} Unit ({item.lansirCpkoTotalMt} MT)</div>
                       <div><strong>Mesin Running:</strong> {item.plantRunRunning}</div>
